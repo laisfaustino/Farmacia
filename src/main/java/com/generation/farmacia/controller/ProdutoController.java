@@ -1,6 +1,7 @@
 package com.generation.farmacia.controller;
 
 import java.math.BigDecimal;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.generation.farmacia.model.Produto;
-import com.generation.farmacia.repository.CategoriaRepository;
 import com.generation.farmacia.repository.ProdutoRepository;
 
 import jakarta.validation.Valid;
@@ -31,17 +31,11 @@ import jakarta.validation.Valid;
 public class ProdutoController {
 
 	@Autowired
-    private ProdutoRepository produtoRepository;
-
-	@Autowired
-	private CategoriaRepository categoriaRepository;
-
+	private ProdutoRepository produtoRepository;
 	
 	@GetMapping
 	public ResponseEntity<List<Produto>> getAll(){
-		return ResponseEntity.ok(produtoRepository.findAll());
-
-		// SELECT * FROM tb_postagens;
+		return ResponseEntity.ok(produtoRepository.findAll());		
 	}
 	
 	@GetMapping("/{id}")
@@ -49,72 +43,60 @@ public class ProdutoController {
 		
 		return produtoRepository.findById(id)
 				.map(resposta -> ResponseEntity.ok(resposta))
-				.orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-		
-		// SELECT * FROM tb_postagens WHERE id = ?;
-	}
-	
+				.orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());	
+	} 
+
 	@GetMapping("/nome/{nome}")
 	public ResponseEntity<List<Produto>> getByNome(@PathVariable String nome){
 		
-		return ResponseEntity.ok(produtoRepository.findAllByNomeContainingIgnoreCase(nome));
+		return ResponseEntity.ok(produtoRepository.findAllByNomeContainingIgnoreCase(nome));	
+	}
+	
+	@GetMapping("/nome/{nome}/oulaboratorio/{laboratorio}")
+	public ResponseEntity<List<Produto>> getByNomeOuLaboratorio(@PathVariable String nome, @PathVariable String laboratorio){
 		
-		// SELECT * FROM tb_postagens WHERE titulo LIKE "%titulo%";
+		return ResponseEntity.ok(produtoRepository.findByNomeOrLaboratorioIgnoreCase(nome, laboratorio));	
+	}
+	
+	
+	@GetMapping("/nome/{nome}/elaboratorio/{laboratorio}")
+	public ResponseEntity<List<Produto>> getByNomeELaboratorio(@PathVariable String nome, @PathVariable String laboratorio){
+		
+		return ResponseEntity.ok(produtoRepository.findByNomeAndLaboratorioIgnoreCase(nome, laboratorio));	
+	}
+	
+	@GetMapping("/preco_inicial/{inicio}/preco_final/{fim}")
+	public ResponseEntity<List<Produto>> getByPrecoBetween(@PathVariable BigDecimal inicio, @PathVariable BigDecimal fim){
+		
+		return ResponseEntity.ok(produtoRepository.findByPrecoBetween(inicio, fim));	
 	}
 	
 	@PostMapping
 	public ResponseEntity<Produto> post(@Valid @RequestBody Produto produto){
+
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(produtoRepository.save(produto));
-		
-		/* INSERT INTO tb_postagens (data, titulo, texto) 
-		 VALUES (?, ?, ?)*/
 	}
 	
 	@PutMapping
-	public ResponseEntity<Produto> put(@Valid @RequestBody Produto produto){
-		
+	public ResponseEntity<Produto> put(@Valid @RequestBody Produto produto) {
 		return produtoRepository.findById(produto.getId())
-				.map(resposta -> ResponseEntity.ok(produtoRepository.save(produto)))
+				.map(resposta -> ResponseEntity.status(HttpStatus.OK)
+						.body(produtoRepository.save(produto)))
 				.orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
 		
-		/* UPDATE tb_postagens SET titulo = ?, texto = ?, data = ?
-		 * WHERE id = id*/
 	}
 	
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	@DeleteMapping("/{id}")
 	public void delete(@PathVariable Long id) {
-		
+
 		Optional<Produto> produto = produtoRepository.findById(id);
-		
-		if (produto.isEmpty())
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-		
+				
+		if(produto.isEmpty())
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+				
 		produtoRepository.deleteById(id);
 		
-		/* DELETE FROM tb_postagens WHERE id = id*/
 	}
-
-	public CategoriaRepository getCategoriaRepository() {
-		return categoriaRepository;
-	}
-
-	public void setTemaRepository(CategoriaRepository categoriaRepository) {
-		this.categoriaRepository = categoriaRepository;
-	}
-	
-	@GetMapping("/preco_maior/{preco}")
-	public ResponseEntity<List<Produto>> getPrecoMaiorQue(@PathVariable BigDecimal preco){ 
-		return ResponseEntity.ok(produtoRepository.findAllByPrecoGreaterThanOrderByPreco(preco));
-	}
-	
-	// Consulta pelo preço menor do que o preço digitado em ordem decrescente
-	
-	@GetMapping("/preco_menor/{preco}")
-	public ResponseEntity<List<Produto>> getPrecoMenorQue(@PathVariable BigDecimal preco){ 
-		return ResponseEntity.ok(produtoRepository.findAllByPrecoLessThanOrderByPrecoDesc(preco));
-	}
-
 }
-
